@@ -33,4 +33,5 @@ def batch_processing(batch_size):
             #print(user)
             if user.age > 25:
                 print(user)
+                return user
 
