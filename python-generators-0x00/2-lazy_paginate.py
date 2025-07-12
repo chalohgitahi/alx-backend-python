@@ -1,8 +1,29 @@
 #!/usr/bin/env python3
+import mysql.connector
+
+HOST_NAME = "localhost"
+USER_NAME = "root"
+USER_PASSWORD = "  "
+DB_NAME = "ALX_prodev"
 
 def paginate_users(page_size, offset):
     """ Simulate fetching of a page of users from a database. """
-    return USERS[offset : offset + page_size]
+    connection = None
+    cursor = None
+    users = []
+    
+    connection = mysql.connector.connect(
+        host=HOST_NAME,
+        user=USER_NAME,
+        password=user_password,
+        database=DB_NAME
+        )
+    db_cursor = connection.cursor()
+    query = ["SELECT * FROM user_data LIMIT", "OFFSET"]
+    db_cursor.execute(query, (page_size, offset))
+    users = db_cursor.fetchall()
+    
+    return users
     
 def def lazy_paginate(page_size):
     """ A generator that lazy fetches pages of users """
