@@ -5,7 +5,18 @@ import logging
 import functools
 import time
 
-def retry_on_failure(retries=5, delay=1):
+def with_db_connection(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        conn = None
+        # connect to db, create if not exists
+        conn = sqlite3.connect("ALX_prodev")
+        return func(conn, *args, **kwargs)
+        conn.close()
+    return wrapper
+
+@with_db_connection
+def retry_on_failure(retries, delay):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -26,3 +37,15 @@ def retry_on_failure(retries=5, delay=1):
                     time.sleep(_delay)
         return wrapper
     return decorator
+    
+@with_db_connection
+@retry_on_failure(retries=3, delay=1)
+def fetch_users_with_retry(conn):
+cursor = conn.cursor()
+cursor.execute("SELECT * FROM users")
+return cursor.fetchall()
+
+#### attempt to fetch users with automatic retry on failure
+
+users = fetch_users_with_retry()
+print(users)
