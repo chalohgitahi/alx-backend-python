@@ -6,7 +6,6 @@ def with_db_connection(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         conn = None
-        print("Something is happening before the function is called.")
         # connect to db, create if not exists
         conn = sqlite3.connect("ALX_prodev")
         return func(conn, *args, **kwargs)
