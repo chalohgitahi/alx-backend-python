@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from .models import User, Message, Conversation
 
 
@@ -29,7 +28,7 @@ class MessageSerializer(serializers.ModelSerializer):
 	def validate_message(self, msg):
 		msg = Message.message_body
 		if msg == None:
-			raise ValidationError("Please write a message.")
+			raise serializers.ValidationError("Please write a message.")
 
 
 class ConversationSerializer(serializers.ModelSerializer):
