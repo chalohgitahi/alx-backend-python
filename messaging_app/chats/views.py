@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import User, Message, Conversation
@@ -8,7 +8,8 @@ from .serializers import UserSerializer, MessageSerializer, ConversationSerializ
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-    queryset = Message.objects.filter(user=self.request.user)
+    owner_id = self.request.user.user_id
+    queryset = Conversation.objects.filter(user_id=owner_id)
     serializer_class = MessageSerializer
 
     def get_queryset(self):
@@ -28,12 +29,17 @@ class MessageViewSet(viewsets.ModelViewSet):
     
 
 class ConversationViewSet(viewsets.ModelViewSet):
-    queryset = Conversation.objects.filter(user=self.request.user)
+    # owner_id = self.request.user.user_id
+    # queryset = Conversation.objects.filter(user_id=owner_id)
+    queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ['conversation_id', 'created_at']
+    ordering = ['created_at']
 
     def get_queryset(self):
         queryset = super().get_queryset()
-
+        
         return queryset
     
     def create(self, request, *args, **kwargs):
@@ -45,3 +51,8 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
     def update(self, request, pk=None):
         pass
+
+    def get_search_fields(self, view, request):
+        if request.query_params.get('m'):
+            return ['title']
+        return super().get_search_fields(view, request)
