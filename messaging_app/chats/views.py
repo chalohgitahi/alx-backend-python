@@ -8,7 +8,7 @@ from .serializers import UserSerializer, MessageSerializer, ConversationSerializ
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-    queryset = Message.objects.all()
+    queryset = Message.objects.filter(user=self.request.user)
     serializer_class = MessageSerializer
 
     def get_queryset(self):
@@ -28,7 +28,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     
 
 class ConversationViewSet(viewsets.ModelViewSet):
-    queryset = Conversation.objects.all()
+    queryset = Conversation.objects.filter(user=self.request.user)
     serializer_class = ConversationSerializer
 
     def get_queryset(self):
