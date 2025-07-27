@@ -1,58 +1,56 @@
-from django.shortcuts import render
+
 from django.contrib.auth.models import User
-from rest_framework import status, viewsets, filters
-from rest_framework.decorators import action
+from django.db.models import Q
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from .models import User, Message, Conversation
-from .serializers import UserSerializer, MessageSerializer, ConversationSerializer
+from rest_framework.views import APIView
+from .models import Message
+from .serializers import MessageSerializer, UserSerializer # We still need UserSerializer for the conversation list
 
+# Note: UserRegisterView has been moved to auth.py
 
-class MessageViewSet(viewsets.ModelViewSet):
-    owner_id = self.request.user.user_id
-    queryset = Conversation.objects.filter(user_id=owner_id)
+# 1. View to list all conversations for the logged-in user
+class ConversationListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        messages = Message.objects.filter(Q(sender=user) | Q(receiver=user))
+        
+        participants = set()
+        for msg in messages:
+            if msg.sender == user:
+                participants.add(msg.receiver)
+            else:
+                participants.add(msg.sender)
+
+        user_serializer = UserSerializer(list(participants), many=True)
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
+
+# 2. View to get messages between the logged-in user and another user
+class MessageListView(generics.ListAPIView):
     serializer_class = MessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        """
+        This view returns a list of all the messages between the logged-in
+        user and the user specified by the `user_id` in the URL.
+        This remains the most secure and efficient way to handle permissions
+        for a list view, as it filters at the database level.
+        """
+        user = self.request.user
+        other_user_id = self.kwargs['user_id']
+        return Message.objects.filter(
+            (Q(sender=user) & Q(receiver_id=other_user_id)) |
+            (Q(sender_id=other_user_id) & Q(receiver=user))
+        )
 
-        return queryset
-    
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+# 3. View to send a message
+class SendMessageView(generics.CreateAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    def update(self, request, pk=None):
-        pass
-    
-
-class ConversationViewSet(viewsets.ModelViewSet):
-    # owner_id = self.request.user.user_id
-    # queryset = Conversation.objects.filter(user_id=owner_id)
-    queryset = Conversation.objects.all()
-    serializer_class = ConversationSerializer
-    filter_backends = [filters.OrderingFilter]
-    ordering_fields = ['conversation_id', 'created_at']
-    ordering = ['created_at']
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        
-        return queryset
-    
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def update(self, request, pk=None):
-        pass
-
-    def get_search_fields(self, view, request):
-        if request.query_params.get('m'):
-            return ['title']
-        return super().get_search_fields(view, request)
+    def perform_create(self, serializer):
+        # The sender is automatically set to the logged-in user.
+        serializer.save(sender=self.request.user)
