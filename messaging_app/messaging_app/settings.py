@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'chats',
     'rest_framework',
     'drf_yasg',
+    'django_filters',
+    'rest_framework_simplejwt',
 ]
 
 MIDDLEWARE = [
@@ -128,17 +130,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-        # Primary authentication method for web browsers
+    'DEFAULT_AUTHENTICATION_CLASSES': [   
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-        
-        # Optional: BasicAuthentication allows you to use the browsable API login
-        # and is useful for some testing scenarios.
-        'rest_framework.authentication.BasicAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         # Ensures that by default, all endpoints require authentication.
         'rest_framework.permissions.IsAuthenticated',
-    ]
+    ],
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
 }
