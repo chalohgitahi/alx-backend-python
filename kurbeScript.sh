@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 # start minekube using docker driver
 minikube start --driver=docker
